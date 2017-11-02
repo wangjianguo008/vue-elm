@@ -1,17 +1,17 @@
 <template>
   <div class="goods">
-    <div class="menu-wrapper">
+    <div class="menu-wrapper" ref='menuWrapper'>
     	<ul>
-    		<li v-for='item in goods' class="menu-item">
+    		<li v-for='(item,index) in goods' class="menu-item" :class="{'current':currentIndex===index}" @click='selectMenu(index,$event)'>
     			<span class="text border-1px">
     				<span class="icon" v-show='item.type>0' :class='classMap[item.type]'></span>{{item.name}}
     			</span>
     		</li>
     	</ul>
     </div>
-    <div class="foos-wrapper">
+    <div class="foos-wrapper" ref='foodWrapper'>
     	<ul>
-    		<li v-for='item in goods' class="food-list">
+    		<li v-for='(item,index) in goods' class="food-list" ref='foodListHook'>
     			<h1 class="title">{{item.name}}</h1>
     			<ul>
     				<li v-for='food in item.foods' class="food-item border-1px">
@@ -39,12 +39,27 @@
 </template>
 
 <script>
+	import BScroll from 'better-scroll'
 	const ERR_OK=0;
 	export default{
 		props:['seller'],
 		data(){
 			return{
-				goods:[]
+				goods:[],
+				listHeight:[],
+				scrollY:0
+			}
+		},
+		computed:{//左侧走第几个标题，属于下标
+			currentIndex(){
+				for(let i=0;i<this.listHeight.length;i++){
+					let height1=this.listHeight[i];
+					let height2=this.listHeight[i+1];
+					if(!height2||(this.scrollY>=height1&&this.scrollY<height2)){
+						return i;
+					}
+				}
+				return 0;
 			}
 		},
 		created(){
@@ -53,8 +68,46 @@
 				req=req.body;
 				if(req.erron===ERR_OK){
 					this.goods=req.data;
+					this.$nextTick(()=>{//初始化
+						this._initScroll();
+						this._calculateHeight();
+					})
 				}
 			})
+		},
+		methods:{
+			selectMenu(index,event){
+				//阻止pc的默认点击(_constructed)api
+				if(!event._constructed){
+					return;
+				}
+				let foodList=this.$refs.foodListHook;
+				let el=foodList[index];
+				this.foodScroll.scrollToElement(el,10);
+			},
+			_initScroll(){
+				this.menuScroll=new BScroll(this.$refs.menuWrapper,{
+					click:true  //默认派发点击事件
+				});
+				this.foodScroll=new BScroll(this.$refs.foodWrapper,{
+					click:true,
+					probeType:3//滚动的一个探针,相当于是个监听
+				});
+				this.foodScroll.on('scroll',(pos)=>{
+					this.scrollY=Math.abs(Math.round(pos.y));//abs正直，round是整数
+				})
+			},
+			_calculateHeight(){
+				let foodList=this.$refs.foodListHook;
+				let heights=0;
+				this.listHeight.push(heights);
+				for(let i=0;i<foodList.length;i++){
+					let item=foodList[i];
+					heights+=item.clientHeight;//没个去区间的高度
+					this.listHeight.push(heights);
+
+				}
+			}
 		}
 	}
 </script>
@@ -80,28 +133,15 @@
 				width: 56px;
 				padding:0 12px;
 				line-height: 14px;
-				.icon{
-					display: inline-block;
-					width: 12px;
-					height: 12px;
-					margin-right: 4px;
-					background-size: 12px 12px;
-					background-repeat: no-repeat;
-					&.decrease{
-						.bg-image("decrease_3");
-					}
-					&.discount{
-						.bg-image("discount_3");
-					}
-					&.guarantee{
-						.bg-image("guarantee_3");
-					}
-					&.invoice{
-						.bg-image("invoice_3");
-					}
-					&.special{
-						.bg-image("special_3");
-					}
+				&.current{
+					position: relative;
+					margin-top: -1px;
+					background: #fff;
+					z-index: 10;
+					font-weight: 700;
+				}
+				.text{
+					.border-none();
 				}
 				.text{
 					font-size: 12px;
@@ -109,6 +149,29 @@
 					width:56px;
 					vertical-align: middle;
 					.border-1px(rgba(7,17,27,0.1));
+					.icon{
+						display: inline-block;
+						width: 12px;
+						height: 12px;
+						margin-right: 4px;
+						background-size: 12px 12px;
+						background-repeat: no-repeat;
+						&.decrease{
+							.bg-image("decrease_3");
+						}
+						&.discount{
+							.bg-image("discount_3");
+						}
+						&.guarantee{
+							.bg-image("guarantee_3");
+						}
+						&.invoice{
+							.bg-image("invoice_3");
+						}
+						&.special{
+							.bg-image("special_3");
+						}
+					}
 				}
 			}
 		}
@@ -150,12 +213,12 @@
 						color: rgb(147,153,159);
 					}
 					.desc{
-						line-height: 10px;
+						line-height: 12px;
 						margin-bottom: 8px;
 					}
 					.extra{
 						line-height: 12px;
-						&.count{
+						.count{
 							margin-right:8px;
 						}
 					}
