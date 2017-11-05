@@ -2,7 +2,8 @@
   <div class="goods">
     <div class="menu-wrapper" ref='menuWrapper'>
     	<ul>
-    		<li v-for='(item,index) in goods' class="menu-item" :class="{'current':currentIndex===index}" @click='selectMenu(index,$event)'>
+    		<li v-for='(item,index) in goods' class="menu-item" :class="{'current':currentIndex===index}" 
+    		@click='selectMenu(index,$event)'>
     			<span class="text border-1px">
     				<span class="icon" v-show='item.type>0' :class='classMap[item.type]'></span>{{item.name}}
     			</span>
@@ -16,7 +17,7 @@
     			<ul>
     				<li v-for='food in item.foods' class="food-item border-1px">
     					<div class="icon">
-    						<img :src='food.icon'>
+    						<img width="57" height="57" :src="food.icon">
     					</div>
     					<div class="content">
     						<h2 class="name">{{food.name}}</h2>
@@ -29,17 +30,23 @@
     							<span class="now">￥{{food.price}}</span>
     							<span v-show='food.oldPrice' class="old">￥{{food.oldPrice}}</span>
     						</div>
+    						<div class="cartcontrol-wrapper">
+    							<cartcontrol :food="food"></cartcontrol>
+    						</div>
     					</div>
     				</li>
     			</ul>
     		</li>
     	</ul>
     </div>
+    <shopCart :select-foods="selectFoods" :delivery-price="seller.deliveryPrice" :min-price="seller.minPrice"></shopCart>
   </div>
 </template>
 
 <script>
 	import BScroll from 'better-scroll'
+	import shopCart from "../../components/shopcart/shopcart"
+	import cartcontrol from "../../components/cartcontrol/cartcontrol"
 	const ERR_OK=0;
 	export default{
 		props:['seller'],
@@ -60,6 +67,17 @@
 					}
 				}
 				return 0;
+			},
+			selectFoods(){
+				let foods=[];
+				this.goods.forEach((good)=>{
+					good.foods.forEach((food)=>{
+						if(food.count){
+							foods.push(food);
+						}
+					})
+				})
+				return foods
 			}
 		},
 		created(){
@@ -76,7 +94,7 @@
 			})
 		},
 		methods:{
-			selectMenu(index,event){
+			selectMenu(index){
 				//阻止pc的默认点击(_constructed)api
 				if(!event._constructed){
 					return;
@@ -103,11 +121,15 @@
 				this.listHeight.push(heights);
 				for(let i=0;i<foodList.length;i++){
 					let item=foodList[i];
-					heights+=item.clientHeight;//没个去区间的高度
+					heights+=item.clientHeight;//每个区间的高度
 					this.listHeight.push(heights);
 
 				}
 			}
+		},
+		components:{
+			shopCart,
+			cartcontrol
 		}
 	}
 </script>
@@ -142,8 +164,6 @@
 				}
 				.text{
 					.border-none();
-				}
-				.text{
 					font-size: 12px;
 					display: table-cell;
 					width:56px;
@@ -236,6 +256,11 @@
 							font-size: 10px;
 							color: rgb(147,153,159);
 						}
+					}
+					.cartcontrol-wrapper{
+						position: absolute;
+						right:0;
+						bottom:12px;
 					}
 				}
 			}
