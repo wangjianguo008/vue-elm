@@ -21,13 +21,15 @@
   	</div>
   	<div class="ball-container">
   		<div v-for="ball in balls">
-  			<transition  v-on:before-enter="beforEnter" v-on:enter='enter' v-on:after-enter='afterEnter'>
-				<div  v-show="ball.show" class="ball">
-					<div class="inner inner-hock"></div>
+					<!-- 过度钩子函数 -->
+					<!--<transition name="drop" v-on:before-enter="beforeDrop" v-on:enter="dropping" v-on:after-enter="afterDrop">-->
+			<transition v-on:before-enter="beforeDrop" v-on:enter="dropping" v-on:after-enter="afterDrop">
+				<div class="ball" v-show="ball.show">
+					<div class="inner inner-hook"></div>
 				</div>
 			</transition>
-  		</div>
-	</div>
+		</div>
+  	</div>
   </div>
 </template>
 
@@ -37,12 +39,7 @@
 			selectFoods:{
 				type:Array,
 				default(){
-					return [
-						{
-							price:50,
-							count:1
-						}
-					];
+					return []
 				}
 			},
 			deliveryPrice:{
@@ -52,18 +49,6 @@
 			minPrice:{
 				type:Number,
 				default:0
-			}
-		},
-		data(){
-			return {
-				balls:[
-					{show:false},
-					{show:false},
-					{show:false},
-					{show:false},
-					{show:false}
-				],
-				dropBalls:[]
 			}
 		},
 		computed:{
@@ -99,47 +84,82 @@
 				}
 			}
 		},
+		data(){
+			return{
+				balls:[
+					{show:false},
+					{show:false},
+					{show:false},
+					{show:false},
+					{show:false}
+				],
+				dropBalls:[]
+			}
+		},
 		methods:{
 			drop(el){
-				for(let i=0;i<this.balls.length;i++){
-					let ball=this.balls[i];
+				for(let i=0; i<this.balls.length; i++){
+					let ball = this.balls[i];
 					if(!ball.show){
-						ball.show=true;
-						ball.el=el;
+						// 只有改变元素显示隐藏状态才会触发 过度钩子函数
+						ball.show = true;
+						ball.el = el;
+						console.log(ball);
 						this.dropBalls.push(ball);
 						return;
 					}
 				}
 			},
-			beforEnter(el){
-				let count=this.balls.length;
+			beforeDrop(el) {
+				let count = this.balls.length;
 				while(count--){
 					let ball = this.balls[count];
 					if(ball.show){
+					    //元素相对于视口的距离
 						let rect = ball.el.getBoundingClientRect();
-						let x=rect.left-32;
-						let y=-(window.innerHeight-rect.top-22);
-						el.style.display='';
+
+						// x,y 为初始点 与 目标点的差值
+						let x = rect.left - 32;
+						let y = -(window.innerHeight - rect.top -22);
+						el.style.display = '';
+
+						// el （初始位置为 0，0，0）和购物车icon在一起，将小球（el）  放到加号位置去
+						//纵向动画
+						el.style.webkitTransform = `translate3d(0,${y}px,0)`;
 						el.style.transform = `translate3d(0,${y}px,0)`;
+
+						// el.style.webkitTransform = `translate3d(0,${x}px,0)`;
+						// el.style.transform = `translate3d(0,${x}px,0)`;
+
+						//横向动画  inner-hook，  仅仅定义类 dom选择器，不做样式
 						let inner = el.getElementsByClassName('inner-hook')[0];
-						el.style.transform = `translate3d(${x}px,0,0)`;
+						inner.style.webkitTransform = `translate3d(${x}px,0,0)`;
+						inner.style.transform = `translate3d(${x}px,0,0)`;
 					}
 				}
 			},
-			enter(el,done){
-				let rf=el.offsetHeight;
-				this.$nextTick(()=>{
+			dropping(el,done) {
+			    //手动触发浏览器重绘，便于translate3d，--rf 变量不会使用
+				let rf = el.offsetHeight;
+
+				this.$nextTick(() => {
+				    //小球样式位置，置于购物车按钮位置处
+					el.style.webkitTransform = 'translate3d(0,0,0)';
 					el.style.transform = 'translate3d(0,0,0)';
+
 					let inner = el.getElementsByClassName('inner-hook')[0];
-					el.style.transform = 'translate3d(0,0,0)';
+					inner.style.webkitTransform = 'translate3d(0,0,0)';
+					inner.style.transform = 'translate3d(0,0,0)';
+
 					el.addEventListener("transitionend",done);
 				})
 			},
-			afterEnter(el){
-				let ball=this.dropBalls.shift();
+			afterDrop(el) {
+			    //此轮动画结束后，将此次的 ball 取出 ，ball状态重置，，el display:none
+				let ball = this.dropBalls.shift();
 				if(ball){
-					ball.show=false;
-					el.style.display='none';
+					ball.show = false;
+					el.style.display = "none";
 				}
 			}
 		}
@@ -253,17 +273,19 @@
 		}
 		.ball-container{
 			.ball{
-				position: fixed;
-				left: 32px;
-				bottom: 22px;
-				z-index: 200;
-				transition:all 0.4s cubic-bezier(0.49, -0.29, 0.75, 0.41);
+				position:fixed;
+				left:32px;
+				bottom:22px;
+				z-index:200;
+				//y 轴 贝塞尔曲线
+				transition:all 0.5s cubic-bezier(0.49, -0.29, 0.75, 0.41);
 				.inner{
 					width:16px;
-					height: 16px;
+					height:16px;
 					border-radius:50%;
-					background: rgb(0,160,220);
-					transition:all 0.4s linear;
+					background-color:rgb(0,160,220);
+					//x 轴只需要线性缓动
+					transition:all 0.5s linear;
 				}
 			}
 		}
