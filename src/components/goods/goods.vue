@@ -15,7 +15,7 @@
     		<li v-for='(item,index) in goods' class="food-list" ref='foodListHook'>
     			<h1 class="title">{{item.name}}</h1>
     			<ul>
-    				<li v-for='food in item.foods' class="food-item border-1px">
+    				<li v-for='food in item.foods' class="food-item border-1px" @click="seeFood(food,$event)">
     					<div class="icon">
     						<img width="57" height="57" :src="food.icon">
     					</div>
@@ -40,6 +40,7 @@
     	</ul>
     </div>
     <shopCart ref="shopcart" :select-foods="selectFoods" :delivery-price="seller.deliveryPrice" :min-price="seller.minPrice"></shopCart>
+    <food :food="seeFoodinfo" ref="food"></food>
   </div>
 </template>
 
@@ -47,6 +48,7 @@
 	import BScroll from 'better-scroll'
 	import shopCart from "../../components/shopcart/shopcart"
 	import cartcontrol from "../../components/cartcontrol/cartcontrol"
+	import food from '../../components/food/food'
 	const ERR_OK=0;
 	export default{
 		props:['seller'],
@@ -54,7 +56,8 @@
 			return{
 				goods:[],
 				listHeight:[],
-				scrollY:0
+				scrollY:0,
+				seeFoodinfo:{}
 			}
 		},
 		computed:{//左侧走第几个标题，属于下标
@@ -133,11 +136,18 @@
 				this.$nextTick(()=>{
 					this.$refs.shopcart.drop(target);
 				})
+			},
+			seeFood(food,event){
+	    	    if(!event._constructed) return;
+				this.seeFoodinfo = food;
+				//调用子组件的 food show 方法
+				this.$refs.food.show();
 			}
 		},
 		components:{
 			shopCart,
-			cartcontrol
+			cartcontrol,
+			food
 		}
 	}
 </script>
