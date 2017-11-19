@@ -12,26 +12,40 @@
         <router-link to='/seller'>商家</router-link>
       </div>
     </div>
-    <router-view :seller='seller'></router-view>
+    <keep-alive>
+      <router-view :seller='seller'></router-view>
+    </keep-alive>  
   </div>
 </template>
 
 <script>
-  import header from './components/header/header'
+  import header from './components/header/header';
+  import {urlParse} from './common/js/date.js';
   const ERR_OK=0
   export default{
     data(){
         return{
-          seller:{}
+          seller:{
+            id:(()=>{
+              let queryParam=urlParse();
+              return queryParam.id;
+            })()
+          }
         }
       },
       created(){
         let that=this;
-        this.$http.get('/api/seller').then((req)=>{
+        /*使用模拟线上的数据库monk.js*/
+        /*this.$http.get('https://www.easy-mock.com/mock/596e2463a1d30433d836f112/ele/ele?id=' + this.seller.id).then((response)=>{
+          console.log(response.body.seller);
+          let data=response.body.seller;
+          this.seller=Object.assign({},this.seller,data);
+        })*/
+        this.$http.get('/api/seller?id='+this.seller.id).then((req)=>{
           req=req.body;
           if(req.erron===ERR_OK){
-            that.seller=req.data;
-            console.log(that.seller)
+            /*that.seller=req.data;*/
+            this.seller=Object.assign({},this.seller,req.data);
           }
         })
       },
